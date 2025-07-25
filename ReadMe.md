@@ -112,3 +112,73 @@
 И так, когда у нас выявлены уязвимые сервисы, работающие на определенных портах, можно переходить к следующему этапу - сканированию.
 
 ## Этап 2. Scanning
+
+### 2.1. Сканирование NMAP
+
+Сканирование начну с утилиты nmap.
+
+У меня имеется заранее подготовленная виртуальная машина Kali Linux, выполняю команду в терминале `nmap -sV -O -A 92.51.39.106`:
+
+![](assets/2-scan/2-nmap.jpg)
+
+Результат:
+
+* Открыт порт 22 - OpenSSH 8.2p1 Ubuntu 4ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+* Операционная система - Linux 5.0 - 5.14
+
+### 2.2. Сканирование ZAP Docker
+
+В виртуальной машине Kali установил необходимый образ в соответствии с [инструкцией](https://www.zaproxy.org/docs/docker/about/) с официального сайта
+командой `docker pull ghcr.io/zaproxy/zaproxy:stable`:
+
+![](assets/2-scan/2-zap-docker-pulled.jpg)
+
+Поочередно буду сканировать адрес 92.51.39.106 по портам 8050 и 7788.
+
+#### Сканирование адреса `http://92.51.39.106:8050`:
+
+Запускаю сканирование по порту 8050 командой `docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
+    -t http://92.51.39.106:8050 -g gen.conf -r Report_8050.html`
+
+#### Сканирование адреса `http://92.51.39.106:7788`:
+
+Запускаю сканирование по порту 7788 командой `docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
+    -t http://92.51.39.106:7788 -g gen.conf -r Report_7788.html`
+
+По результату сканирования получен [отчет](assets/2-scan/zap-docker/Report_7788.html).
+
+Суммарный отчет по результату сканирования:
+
+![](assets/2-scan/2-zap-scan-7788-completed.jpg)
+
+Перечислим полученные High Priority Alerts:
+
+* Cross Site Scripting (DOM Based)
+* Cross Site Scripting (Reflected)
+* Path Traversal
+* Remote OS Command Injection
+* SQL Injection
+
+### 2.3. Сканирование ZAP с графической оболочкой
+
+Ранее я уже установил ZAP на виртуальную машину Kali Linux.
+
+#### 2.3.3 Сканирование адреса `http://92.51.39.106:7788`:
+
+![](assets/2-scan/2-zap-scan-7788.jpg)
+
+По результату сканирования получен [отчет](assets/2-scan/zap/2025-07-25-ZAP-Report-7788.html).
+
+Перечислим полученные High Priority Alerts:
+
+* Cross Site Scripting (DOM Based)
+* Cross Site Scripting (Reflected)
+* Path Traversal
+* Remote OS Command Injection
+* SQL Injection
+
+Скриншот окна ZAP после завершения сканирования `92.51.39.106:7788`:
+
+![](assets/2-scan/2-zap-scan-7788-completed.jpg)
+
+#### 2.3.4 Сканирование адреса `http://92.51.39.106:8050`:
